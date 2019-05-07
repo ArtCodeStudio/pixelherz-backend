@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as lindev from "linux-device";
+const DeviceHandle = require('linux-device');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -8,4 +8,4 @@ async function bootstrap() {
 }
 bootstrap();
 
-const abc = new lindev.DeviceHandle('/dev/fb1');
+var fb = new DeviceHandle({path:"/dev/fb1", autoOpen: true, absoluteSize:6*8*8});

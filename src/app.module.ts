@@ -8,4 +8,6 @@ import { AnimationService } from './animation/animation.service';
   controllers: [AppController],
   providers: [AppService, AnimationService],
 })
-export class AppModule {}
+export class AppModule {
+ 
+}
