@@ -1,11 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-const DeviceHandle = require('linux-device');
+import { AnimationService } from './animation/animation.service';
+var x = [255, 255, 255];
+var o = [0, 0, 0];
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
   await app.listen(3000);
 }
+
 bootstrap();
 
-var fb = new DeviceHandle({path:"/dev/fb1", autoOpen: true, absoluteSize:6*8*8});
