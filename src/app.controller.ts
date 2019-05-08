@@ -12,25 +12,20 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get('a1')
-  async a1(): Promise<string> {
-    await this.animationService.animation1();
-    return 'a';
-  }
-
-  @Get('a2')
-  async a2(): Promise<string> {
-    await this.animationService.animation2();
-    return 'a';
-  }
 
   @Post('test')
-  display(@Req() request: Request): string {
+  animate(@Req() request: Request): string {
     this.animationService.data = Array(1);
 
-    let frame = new AnimationFrame(100000, request.body['pixels']);
-    this.animationService.data[0] = frame;
-    console.log("received frame");
+    let frames = request.body['frames'];
+    this.animationService.data = frames;
+    console.log("received frames");
+    console.log(frames);
     return 'a';
+  }
+
+  @Get('test')
+  getAnimation() {
+    return {frames:this.animationService.data};
   }
 }

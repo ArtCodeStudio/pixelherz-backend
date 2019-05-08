@@ -10,7 +10,6 @@ export class AnimationService {
     private taskId: any;
 
     constructor() {
-        this.animation1();
         this.animate();
     }
 
@@ -20,7 +19,7 @@ export class AnimationService {
         } else {
             if(typeof this.data[this.index] === 'undefined') {
                 this.taskId = setTimeout(() => {this.animate()}, 100);
-                console.log('abc');
+                console.log('abc ' + this.index);
                 this.index = 0;
                 return;   
             } 
@@ -30,9 +29,9 @@ export class AnimationService {
             for(var i = 0; i < 64; i++) {
                 //TODO übersichtlicher
                 if(typeof this.data[this.index].data[i] !== 'undefined') {
-                    var r = (this.data[this.index].data[i][0] >> 3) & 0x1F;
-                    var g = (this.data[this.index].data[i][1] >> 2) & 0x3F;
-                    var b = (this.data[this.index].data[i][2] >> 3) & 0x1F;
+                    var r = (this.data[this.index].data[i].red >> 3) & 0x1F;
+                    var g = (this.data[this.index].data[i].green >> 2) & 0x3F;
+                    var b = (this.data[this.index].data[i].blue >> 3) & 0x1F;
                     var bits16 = (r << 11) + (g << 5) + b;
                     buffer.writeUInt16LE(bits16, i*2);
                 } else {
@@ -44,38 +43,13 @@ export class AnimationService {
                 if (err) console.log(err);
             });
 
+            console.log(this.data[this.index].duration);
             this.taskId = setTimeout(() => {this.animate()}, this.data[this.index].duration);
 
             this.index++;
             if(this.data.length <= this.index) this.index = 0;
 
         }
-    }
-
-    animation1() {
-        this.data = Array(64);
-        for(let i = 0; i < 64; i++) {
-            let data = Array(64).fill([0,0,0]);
-            data[i] = [255,255,255];
-            this.cut(data);
-            this.data[i] = new AnimationFrame(40, data); 
-        }
-    }
-    
-    animation2() {
-        this.data = Array(2);
-        let a = Array(64).fill([0,0,0]);
-        for(let i = 0; i < 64; i+=2) {
-            a[i] = [255,255,255]; 
-        }
-        let b = Array(64).fill([0,0,0]);
-        for(let i = 1; i < 64; i+=2) {
-            b[i] = [255,255,255]; 
-        }
-        this.cut(a);
-        this.cut(b);
-        this.data[0] = new AnimationFrame(400, a);
-        this.data[1] = new AnimationFrame(400, b);
     }
 
     heart: boolean[] = [
@@ -98,10 +72,6 @@ export class AnimationService {
     }
     
     
-    private sleep(millis: number) {
-        return new Promise(resolve => setTimeout(resolve, millis));
-    }
-
     get data(): AnimationFrame[] {
         return this._data;
     }
