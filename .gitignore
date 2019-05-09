@@ -47,3 +47,5 @@ Thumbs.db
 # Mock API
 /api/node_modules
 
+# Config
+ormconfig.json
