@@ -11,14 +11,21 @@ var fs = require("fs");
 export class AnimationService {
     private index: number;
     private taskId: any;
-    private loadedAnimations: Animation[];
+    public loadedAnimations: Animation[];
     public currentAnimation: Animation;
     
     constructor(private readonly connection: Connection) {
-        this.queryAnimation(2).then(o => { 
+        /*this.queryAnimation(2).then(o => { 
             this.loadAnimation(o);
             this.animate();
+        });*/
+        this.queryAnimations().then(o => {
+            this.loadedAnimations = o;
+            this.currentAnimation = this.loadedAnimations[0];
+            this.animate();
         });
+
+
     }
 
     async animate() {
@@ -55,7 +62,14 @@ export class AnimationService {
             this.taskId = setTimeout(() => {this.animate()}, this.currentAnimation.frames[this.index].duration);
 
             this.index++;
-            if(this.currentAnimation.frames.length <= this.index) this.index = 0;
+            if(this.currentAnimation.frames.length <= this.index) {
+                this.index = 0;
+                if(this.loadedAnimations.length-1 > this.loadedAnimations.indexOf(this.currentAnimation)) {
+                    this.currentAnimation = this.loadedAnimations[this.loadedAnimations.indexOf(this.currentAnimation)+1];
+                } else {
+                    this.currentAnimation = this.loadedAnimations[0];
+                }
+            }
 
         }
     }
@@ -81,6 +95,16 @@ export class AnimationService {
     
 
     loadAnimation(animation: Animation) {
+        let found: boolean = false;
+        for(let i = 0; i < this.loadedAnimations.length; i++) {
+            if(this.loadedAnimations[i].animationId == animation.animationId) {
+                this.loadedAnimations[i] = animation;
+                found = true;
+            }
+        }
+        if(!found) {
+            this.loadedAnimations[this.loadedAnimations.length] = animation;
+        }
         this.currentAnimation = animation;
         if(this.taskId) {
             clearTimeout(this.taskId);
@@ -89,16 +113,12 @@ export class AnimationService {
     }
 
     async queryAnimation(animationId: number): Promise<Animation> {
-        let animation: Animation = new Animation();
-        animation.animationId = animationId;
-        
-        /*this.connection.manager.createQueryBuilder()
-        .select('*')
-        .from(Animation, 'animation')
-        .where('animationAnimationId = :id', {id: id})
-        .limit(1).select();*/
-        return <Animation> <unknown> await this.connection.manager
-        .findOne("animation", {where: {id: animation.animationId}, });
+        return <Animation> <unknown> await this.connection.manager.findOne("animation", {where: {id: animationId}});
+    }
+
+
+    async queryAnimations(): Promise<Animation[]> {
+        return <Animation[]> <unknown> await this.connection.manager.find("animation");
     
     }
 }

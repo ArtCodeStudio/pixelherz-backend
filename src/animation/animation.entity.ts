@@ -1,11 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, Unique } from 'typeorm';
 import { AnimationFrame } from './animation-frame.entity';
 
 @Entity()
+@Unique(['name'])
 export class Animation {
     @PrimaryGeneratedColumn()
     public animationId: number;
-
+    
     @Column({ length: 64 })
     public name: string;
 

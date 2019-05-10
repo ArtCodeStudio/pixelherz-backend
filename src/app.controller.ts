@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Req, Request } from '@nestjs/common';
+import { Controller, Get, Post, Req, Request, Query, BadRequestException, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AnimationService } from './animation/animation.service';
 import { Animation } from './animation/animation.entity';
@@ -6,15 +6,9 @@ import { Connection } from 'typeorm';
 import { AnimationFrame } from './animation/animation-frame.entity';
 import { MatrixCell } from './animation/matrix-cell.entity';
 
-@Controller()
+@Controller('animation')
 export class AppController {
   constructor(private readonly appService: AppService, private readonly connection: Connection, private animationService: AnimationService) {}
-
-  @Get()
-  async getHello(): Promise<string> {
-    return this.appService.getHello();
-  }
-
 
   @Post('create')
   async create(@Req() request: Request): Promise<object> {
@@ -26,10 +20,8 @@ export class AppController {
 
   @Post('update')
   async animate(@Req() request: Request): Promise<object> {
-
     // TODO (Pascal): Gibt es eine einfachere Möglichkeit? Wenn ich es ohne die Objekte mache funktionieren die Animationen zwar,
     // aber es kann nicht auf die Methode zugegriffen werden, was ja auch Sinn ergibt. 
-
 
     // convert json input to typescript objects
     let id = request.body['id'];
@@ -58,14 +50,45 @@ export class AppController {
 
     await this.connection.manager.save(Animation, animation);
     console.log(animation);
-    this.animationService.currentAnimation = animation;
+    this.animationService.loadAnimation(animation);
 
     return {success:true};
   }
 
-  @Get('test')
-  getAnimation() {
-    console.log(this.animationService.currentAnimation.toObject());
-    return {animation:this.animationService.currentAnimation.toObject()};
+  @Post('delete')
+  async delete(@Body('id') id: string): Promise<object> {
+    await this.connection
+      .createQueryBuilder()
+      .delete()
+      .from(Animation)
+      .where('animationAnimationId = :id', {id: id})
+      .execute();
+
+    return {success:true};
+  }
+
+  @Get()
+  getAnimation(@Query('id') id: string) {
+    if(id !== undefined) {
+      for(let i = 0; i < this.animationService.loadedAnimations.length; i++) {
+        let animation: Animation = this.animationService.loadedAnimations[i];
+        if(animation.animationId.toString() === id) {
+          return {success:true, animation:animation.toObject()};
+        }
+      }
+      throw new BadRequestException('Invalid id');
+    } else {
+      return {success:true, animation:this.animationService.currentAnimation.toObject()};
+    }
+  }
+
+  @Get('list')
+  getList() {
+    let list = Array();
+    for(let i = 0; i < this.animationService.loadedAnimations.length; i++) {
+      let animation: Animation = this.animationService.loadedAnimations[i];
+      list[i] = {title:animation.name, id: animation.animationId}
+    }
+    return {animations:list};
   }
 }
