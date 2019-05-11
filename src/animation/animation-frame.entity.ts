@@ -1,6 +1,7 @@
 import { MatrixCell } from './matrix-cell.entity';
 import { Entity, Column, OneToMany, PrimaryGeneratedColumn, ManyToOne, Unique, Index, JoinColumn } from 'typeorm';
 import { Animation } from './animation.entity';
+import { IAnimationFrame } from 'src/interfaces';
 
 @Entity({
     orderBy: {
@@ -24,9 +25,15 @@ export class AnimationFrame {
     @OneToMany(type => MatrixCell, cell => cell.frame, {cascade: ["insert", "update", "remove"], eager:true})
     public data: MatrixCell[];
     
-    constructor(position: number, duration: number, data: MatrixCell[]) {
-        this.duration = duration;
-        this.data = data;
+    static fromData(frameData: IAnimationFrame): AnimationFrame {
+        let animationFrame: AnimationFrame = new AnimationFrame();
+        animationFrame.position = frameData.position;
+        animationFrame.duration = frameData.duration;
+        animationFrame.data = Array();
+        for(let i = 0; i < frameData.data.length; i++) {
+            animationFrame.data[i] = MatrixCell.fromData(frameData.data[i]);
+        }
+        return animationFrame;
     }
 
     toObject(): object {

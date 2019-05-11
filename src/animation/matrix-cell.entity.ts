@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, PrimaryColumn, Index, JoinColumn } from "typeorm";
 import { AnimationFrame } from "./animation-frame.entity";
+import { IMatrixCell } from "src/interfaces";
 
 @Entity()
 @Index(['position', 'frame'])
@@ -21,13 +22,16 @@ export class MatrixCell {
     @Column()
     public blue: number;
 
-    constructor(position: number, red: number, green: number, blue: number) {
-        this.position = position;
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
+    static fromData(cellData: IMatrixCell): MatrixCell {
+        let matrixCell: MatrixCell = new MatrixCell();
+        matrixCell.blue = cellData.blue;
+        matrixCell.red = cellData.red;
+        matrixCell.green = cellData.green;
+        matrixCell.position = cellData.position;
+        return matrixCell;
     }
-    
+
+
     toObject(): object {
         return {id: this.cellId, position: this.position, red: this.red, green: this.green, blue: this.blue};
     }

@@ -1,36 +1,29 @@
-
 import { Injectable } from '@nestjs/common';
-import { AnimationFrame } from './animation-frame.entity';
 import { Animation } from './animation.entity';
 import { Connection } from 'typeorm';
-import { AppModule } from 'src/app.module';
 
 var fs = require("fs");
 
 @Injectable()
 export class AnimationService {
-    private index: number;
+    private index: number = 0;
     private taskId: any;
     public loadedAnimations: Animation[];
     public currentAnimation: Animation;
     
     constructor(private readonly connection: Connection) {
-        /*this.queryAnimation(2).then(o => { 
-            this.loadAnimation(o);
-            this.animate();
-        });*/
         this.queryAnimations().then(o => {
             this.loadedAnimations = o;
             this.currentAnimation = this.loadedAnimations[0];
+            console.log(this.loadedAnimations);
             this.animate();
         });
-
-
     }
 
     async animate() {
-        if(typeof this.currentAnimation === 'undefined' || this.currentAnimation.frames.length == 0) {
+        if(typeof this.currentAnimation === 'undefined' || typeof this.currentAnimation.frames === 'undefined' || this.currentAnimation.frames.length == 0) {
             this.taskId = setTimeout(() => {this.animate()}, 100);
+            this.next();
         } else {
             if(typeof this.currentAnimation.frames[this.index] === 'undefined') {
                 this.taskId = setTimeout(() => {this.animate()}, 100);
@@ -61,38 +54,27 @@ export class AnimationService {
             console.log(this.currentAnimation.frames[this.index].duration);
             this.taskId = setTimeout(() => {this.animate()}, this.currentAnimation.frames[this.index].duration);
 
-            this.index++;
-            if(this.currentAnimation.frames.length <= this.index) {
-                this.index = 0;
-                if(this.loadedAnimations.length-1 > this.loadedAnimations.indexOf(this.currentAnimation)) {
-                    this.currentAnimation = this.loadedAnimations[this.loadedAnimations.indexOf(this.currentAnimation)+1];
-                } else {
-                    this.currentAnimation = this.loadedAnimations[0];
-                }
-            }
+            this.next();
 
         }
     }
 
-    heart: boolean[] = [
-        false,false,false,false,false,false,false,false,
-        false,true ,true ,true ,true ,true ,true ,false,
-        true ,true ,true ,true ,true ,true ,true ,true ,
-        true ,true ,true ,true ,true ,true ,true ,true ,
-        true ,true ,true ,true ,true ,true ,true ,true ,
-        false,true ,true ,true ,true ,true ,true ,false,
-        false,false,true ,true ,true ,true ,false,false,
-        false,false,false,true ,true ,false,false,false,
-    ];
-
-    cut(data: number[][]) {
-        for(let i = 0; i < 64; i++) {
-            if(this.heart[i] === false) {
-                data[i] = [0,0,0];
+    next() {
+        this.index++;                
+        if(!this.currentAnimation || typeof this.currentAnimation.frames === 'undefined' || this.currentAnimation.frames.length <= this.index) {
+            this.index = 0;
+            if(this.loadedAnimations.length-1 > this.loadedAnimations.indexOf(this.currentAnimation)) {
+                this.currentAnimation = this.loadedAnimations[this.loadedAnimations.indexOf(this.currentAnimation)+1];
+            } else {
+                this.currentAnimation = this.loadedAnimations[0];
             }
         }
     }
     
+    async createAnimation(animation: Animation) {
+        await this.connection.manager.save(Animation, animation);
+        this.loadAnimation(animation);
+    }
 
     loadAnimation(animation: Animation) {
         let found: boolean = false;
@@ -113,12 +95,15 @@ export class AnimationService {
     }
 
     async queryAnimation(animationId: number): Promise<Animation> {
-        return <Animation> <unknown> await this.connection.manager.findOne("animation", {where: {id: animationId}});
+        return await this.connection.manager.findOne("animation", {where: {animationId: animationId}}) as Animation;
     }
 
 
     async queryAnimations(): Promise<Animation[]> {
-        return <Animation[]> <unknown> await this.connection.manager.find("animation");
+        return await this.connection.manager.find("animation");
+    }
     
+    async listAnimations() {
+        return await this.connection.manager.find("animation", { select: ["animationId", "name"]});
     }
 }

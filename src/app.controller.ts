@@ -6,46 +6,42 @@ import { Connection } from 'typeorm';
 import { AnimationFrame } from './animation/animation-frame.entity';
 import { MatrixCell } from './animation/matrix-cell.entity';
 
+import { IAnimation } from './interfaces';
+import { type } from 'os';
+
 @Controller('animation')
 export class AppController {
   constructor(private readonly appService: AppService, private readonly connection: Connection, private animationService: AnimationService) {}
 
   @Post('create')
-  async create(@Req() request: Request): Promise<object> {
-    let animation: Animation = new Animation();
+  async create(@Req() request: Request, @Body() animationData: IAnimation): Promise<object> {
+    let animation: Animation = Animation.fromData(animationData);
     animation.name = request.body['name'];
-    console.log(await this.connection.manager.save(Animation, animation));
+    console.log(this.animationService.createAnimation(animation));
     return {success:true, id: animation.animationId};
   }
 
+  /**
+   * 
+   * @param request 
+   * @param frames 
+   */
   @Post('update')
-  async animate(@Req() request: Request): Promise<object> {
-    // TODO (Pascal): Gibt es eine einfachere Möglichkeit? Wenn ich es ohne die Objekte mache funktionieren die Animationen zwar,
-    // aber es kann nicht auf die Methode zugegriffen werden, was ja auch Sinn ergibt. 
-
+  async animate(@Req() request: Request, @Body() animationData: IAnimation): Promise<{success: boolean}> {
     // convert json input to typescript objects
-    let id = request.body['id'];
-    let animation: Animation = new Animation();
-    let frames: AnimationFrame[] = Array();
-    for(let i = 0; i < request.body['frames'].length; i++) {
-      let cells: MatrixCell[] = Array();
-      for(let j = 0; j < request.body['frames'][i].data.length; j++) {
-        cells[j] = new MatrixCell(request.body['frames'][i].data[j].position, request.body['frames'][i].data[j].red, request.body['frames'][i].data[j].green, request.body['frames'][i].data[j].blue);
-      }
-      let frame: AnimationFrame = new AnimationFrame(i, request.body['frames'][i].duration, cells);
-      frame.data.forEach(c => c.frame = frame);
-      frames[i] = frame;
+    if(!animationData || typeof animationData.animationId === 'undefined' || typeof animationData.frames === 'undefined') {
+      throw new BadRequestException("parameters are missing");
     }
-    
-    animation.frames = frames;
-    animation.animationId = id;
+
+    let animation: Animation = Animation.fromData(animationData);
+
     console.log(animation);
 
     await this.connection
       .createQueryBuilder()
       .delete()
       .from(AnimationFrame)
-      .where('animationAnimationId = :id', {id: id})
+      .where('animationAnimationId = :id', {id: animationData.animationId})
       .execute();
 
     await this.connection.manager.save(Animation, animation);
@@ -84,11 +80,6 @@ export class AppController {
 
   @Get('list')
   getList() {
-    let list = Array();
-    for(let i = 0; i < this.animationService.loadedAnimations.length; i++) {
-      let animation: Animation = this.animationService.loadedAnimations[i];
-      list[i] = {title:animation.name, id: animation.animationId}
-    }
-    return {animations:list};
+    return this.animationService.listAnimations()
   }
 }
