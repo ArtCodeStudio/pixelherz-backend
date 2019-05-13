@@ -53,13 +53,7 @@ export class AppController {
 
   @Post('delete')
   async delete(@Body('id') id: string): Promise<object> {
-    await this.connection
-      .createQueryBuilder()
-      .delete()
-      .from(Animation)
-      .where('animationAnimationId = :id', {id: id})
-      .execute();
-
+    this.animationService.delete(id);
     return {success:true};
   }
 

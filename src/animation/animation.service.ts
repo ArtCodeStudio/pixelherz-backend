@@ -106,4 +106,17 @@ export class AnimationService {
     async listAnimations() {
         return await this.connection.manager.find("animation", { select: ["animationId", "name"]});
     }
+    async delete(id: string) {
+        await this.connection
+        .createQueryBuilder()
+        .delete()
+        .from(Animation)
+        .where('animationId = :id', {id: id})
+        .execute();
+        for (let i = 0; i < this.loadedAnimations.length; i++) {
+            if(this.loadedAnimations[i].animationId == Number.parseInt(id)) {
+                this.loadedAnimations.splice(i, 1);
+            }            
+        }
+    }
 }
