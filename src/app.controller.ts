@@ -17,8 +17,9 @@ export class AppController {
   async create(@Req() request: Request, @Body() animationData: IAnimation): Promise<object> {
     let animation: Animation = Animation.fromData(animationData);
     animation.name = request.body['name'];
-    console.log(this.animationService.createAnimation(animation));
-    return {success:true, id: animation.animationId};
+    animation.repeats = 1;
+    console.log(await this.animationService.createAnimation(animation));
+    return {success:true, id: animation.animationId, name: animation.name};
   }
 
   /**
@@ -54,6 +55,12 @@ export class AppController {
   @Post('delete')
   async delete(@Body('id') id: string): Promise<object> {
     this.animationService.delete(id);
+    return {success:true};
+  }
+
+  @Post('status')
+  async status(@Body('id') id: string, @Body('enabled') enabled: boolean): Promise<object> {
+    await this.animationService.setStatus(id, enabled);
     return {success:true};
   }
 

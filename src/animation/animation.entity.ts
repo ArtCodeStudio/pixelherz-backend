@@ -13,6 +13,8 @@ export class Animation {
         }
         animation.animationId = animationData.animationId;
         animation.frames = Array();
+        animation.repeats = animationData.repeats;
+        animation.enabled = animationData.enabled;
         if(animationData.frames) {
             for(let i = 0; i < animationData.frames.length; i++) {
                 animation.frames[i] = AnimationFrame.fromData(animationData.frames[i]);
@@ -27,6 +29,12 @@ export class Animation {
     @Column({ length: 64 })
     public name: string;
 
+    @Column()
+    public repeats: number;
+
+    @Column()
+    public enabled: boolean;
+
     @OneToMany(type => AnimationFrame, frame => frame.animation, {cascade: ["insert", "update", "remove"], eager:true})
     public frames: AnimationFrame[];
 
@@ -37,7 +45,7 @@ export class Animation {
             frames[i] = this.frames[i].toObject();
         }
 
-        return {id: this.animationId, name: this.name, frames: frames}
+        return {id: this.animationId, name: this.name, frames: frames, repeats: this.repeats, enabled: this.enabled}
     }
     
 }

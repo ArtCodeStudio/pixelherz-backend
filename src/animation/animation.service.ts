@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Next } from '@nestjs/common';
 import { Animation } from './animation.entity';
 import { Connection } from 'typeorm';
 
@@ -7,6 +7,7 @@ var fs = require("fs");
 @Injectable()
 export class AnimationService {
     private index: number = 0;
+    private repeats: number = 0;
     private taskId: any;
     public loadedAnimations: Animation[];
     public currentAnimation: Animation;
@@ -61,18 +62,28 @@ export class AnimationService {
 
     next() {
         this.index++;                
-        if(!this.currentAnimation || typeof this.currentAnimation.frames === 'undefined' || this.currentAnimation.frames.length <= this.index) {
-            this.index = 0;
-            if(this.loadedAnimations.length-1 > this.loadedAnimations.indexOf(this.currentAnimation)) {
-                this.currentAnimation = this.loadedAnimations[this.loadedAnimations.indexOf(this.currentAnimation)+1];
+        if(!this.currentAnimation || typeof this.currentAnimation.frames === 'undefined' || this.currentAnimation.frames.length <= this.index || !this.currentAnimation.enabled) {
+            if(this.repeats >= this.currentAnimation.repeats-1) {
+                this.index = 0;
+                this.repeats = 0;
+                if(this.loadedAnimations.length-1 > this.loadedAnimations.indexOf(this.currentAnimation)) {
+                    this.currentAnimation = this.loadedAnimations[this.loadedAnimations.indexOf(this.currentAnimation)+1];
+                } else {
+                    this.currentAnimation = this.loadedAnimations[0];
+                }
+                if(!this.currentAnimation.enabled) {
+                    this.next();
+                }
             } else {
-                this.currentAnimation = this.loadedAnimations[0];
+                this.repeats++;
+                this.index = 0;
             }
         }
     }
     
     async createAnimation(animation: Animation) {
         await this.connection.manager.save(Animation, animation);
+        console.log(animation)
         this.loadAnimation(animation);
     }
 
@@ -104,7 +115,7 @@ export class AnimationService {
     }
     
     async listAnimations() {
-        return await this.connection.manager.find("animation", { select: ["animationId", "name"]});
+        return await this.connection.manager.find("animation", { select: ["animationId", "name", "repeats", "enabled"]});
     }
     async delete(id: string) {
         await this.connection
@@ -118,5 +129,20 @@ export class AnimationService {
                 this.loadedAnimations.splice(i, 1);
             }            
         }
+    }
+
+
+    async setStatus(id: string, enabled: boolean) {
+        for (let i = 0; i < this.loadedAnimations.length; i++) {
+            if(this.loadedAnimations[i].animationId == Number.parseInt(id)) {
+                this.loadedAnimations[i].enabled = enabled;
+            }            
+        }
+        await this.connection
+        .createQueryBuilder()
+        .update(Animation)
+        .set({enabled: enabled})
+        .where('animationId = :id', {id: Number.parseInt(id)})
+        .execute();
     }
 }
