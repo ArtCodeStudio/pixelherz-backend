@@ -8,6 +8,7 @@ import { MatrixCell } from './animation/matrix-cell.entity';
 
 import { IAnimation } from './interfaces';
 import { type } from 'os';
+import { Color } from './animation/color.entity';
 
 @Controller('animation')
 export class AppController {
@@ -30,7 +31,7 @@ export class AppController {
   @Post('update')
   async animate(@Req() request: Request, @Body() animationData: IAnimation): Promise<{success: boolean}> {
     // convert json input to typescript objects
-    if(!animationData || typeof animationData.animationId === 'undefined' || typeof animationData.frames === 'undefined') {
+    if(!animationData || typeof animationData.animationId === 'undefined' || typeof animationData.frames === 'undefined' || typeof animationData.colors === 'undefined') {
       throw new BadRequestException("parameters are missing");
     }
 
@@ -38,6 +39,7 @@ export class AppController {
 
     console.log(animation);
 
+    console.log("3");
     await this.connection
       .createQueryBuilder()
       .delete()
@@ -45,10 +47,20 @@ export class AppController {
       .where('animationAnimationId = :id', {id: animationData.animationId})
       .execute();
 
+      console.log("2");
+    await this.connection
+      .createQueryBuilder()
+      .delete()
+      .from(Color)
+      .where('animationAnimationId = :id', {id: animationData.animationId})
+      .execute();
+      console.log("1");
     await this.connection.manager.save(Animation, animation);
     console.log(animation);
+    console.log("5");
     this.animationService.loadAnimation(animation);
 
+    console.log("6");
     return {success:true};
   }
 
@@ -61,6 +73,11 @@ export class AppController {
   @Post('status')
   async status(@Body('id') id: string, @Body('enabled') enabled: boolean): Promise<object> {
     await this.animationService.setStatus(id, enabled);
+    return {success:true};
+  }
+  @Post('repeats')
+  async repeats(@Body('id') id: string, @Body('repeats') repeats: number): Promise<object> {
+    await this.animationService.setRepeats(id, repeats);
     return {success:true};
   }
 

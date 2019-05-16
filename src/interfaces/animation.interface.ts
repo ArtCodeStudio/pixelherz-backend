@@ -1,4 +1,5 @@
 import { IAnimationFrame } from './frame.interface';
+import { IMatrixCell } from './matrix.interface';
 
 export interface IAnimation {
     animationId?: number;
@@ -6,4 +7,5 @@ export interface IAnimation {
     frames?: IAnimationFrame[];
     repeats?: number;
     enabled?: boolean;
+    colors?: IMatrixCell[];
 }

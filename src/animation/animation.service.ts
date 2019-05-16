@@ -6,6 +6,7 @@ var fs = require("fs");
 
 @Injectable()
 export class AnimationService {
+
     private index: number = 0;
     private repeats: number = 0;
     private taskId: any;
@@ -15,6 +16,11 @@ export class AnimationService {
     constructor(private readonly connection: Connection) {
         this.queryAnimations().then(o => {
             this.loadedAnimations = o;
+            for(let i = 0; i < this.loadedAnimations.length; i++) {
+                //this.loadedAnimations[i].frames.sort((a, b) => {
+                //    return a.position - b.position;
+                //})
+            };
             this.currentAnimation = this.loadedAnimations[0];
             console.log(this.loadedAnimations);
             this.animate();
@@ -61,26 +67,45 @@ export class AnimationService {
     }
 
     next() {
+        if(!this.animationAvailable()) {
+            return;
+        }
         this.index++;                
         if(!this.currentAnimation || typeof this.currentAnimation.frames === 'undefined' || this.currentAnimation.frames.length <= this.index || !this.currentAnimation.enabled) {
+
             if(this.repeats >= this.currentAnimation.repeats-1) {
                 this.index = 0;
                 this.repeats = 0;
-                if(this.loadedAnimations.length-1 > this.loadedAnimations.indexOf(this.currentAnimation)) {
-                    this.currentAnimation = this.loadedAnimations[this.loadedAnimations.indexOf(this.currentAnimation)+1];
-                } else {
-                    this.currentAnimation = this.loadedAnimations[0];
-                }
-                if(!this.currentAnimation.enabled) {
-                    this.next();
-                }
+                this.nextAnimation();
+                while(!this.currentAnimation.enabled && this.animationAvailable()) {
+                    this.index = 0;
+                    this.repeats = 0;
+                    this.nextAnimation();
+                }  
             } else {
                 this.repeats++;
                 this.index = 0;
             }
         }
     }
+
+    animationAvailable(): boolean {
+        for (let i = 0; i < this.loadedAnimations.length; i++) {
+            if(this.loadedAnimations[i].enabled) return true;
+        }
+        return false;
+    }
     
+    nextAnimation() {
+        if(this.loadedAnimations.length-1 > this.loadedAnimations.indexOf(this.currentAnimation)) {
+            console.log("new animation: " + this.loadedAnimations.indexOf(this.currentAnimation)+1);
+            this.currentAnimation = this.loadedAnimations[this.loadedAnimations.indexOf(this.currentAnimation)+1];
+        } else {
+            this.currentAnimation = this.loadedAnimations[0];
+            console.log("new animation: " + 1);
+        } 
+    }
+
     async createAnimation(animation: Animation) {
         await this.connection.manager.save(Animation, animation);
         console.log(animation)
@@ -142,6 +167,20 @@ export class AnimationService {
         .createQueryBuilder()
         .update(Animation)
         .set({enabled: enabled})
+        .where('animationId = :id', {id: Number.parseInt(id)})
+        .execute();
+    }
+
+    async setRepeats(id: string, repeats: number) {
+        for (let i = 0; i < this.loadedAnimations.length; i++) {
+            if(this.loadedAnimations[i].animationId == Number.parseInt(id)) {
+                this.loadedAnimations[i].repeats = repeats;
+            }            
+        }
+        await this.connection
+        .createQueryBuilder()
+        .update(Animation)
+        .set({repeats: repeats})
         .where('animationId = :id', {id: Number.parseInt(id)})
         .execute();
     }
